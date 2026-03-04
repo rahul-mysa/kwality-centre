@@ -17,7 +17,7 @@ import { db } from './db/index.js';
 import { users } from './db/schema.js';
 import { eq } from 'drizzle-orm';
 
-config({ path: '.env.local' });
+config({ path: '.env.local', override: false });
 
 async function ensureDevUser() {
   if (process.env.NODE_ENV === 'production' || process.env.GOOGLE_CLIENT_ID) return;
