@@ -436,7 +436,14 @@ const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRu
                 <span class="badge badge-xs badge-ghost">{groupRuns.length} run{groupRuns.length !== 1 ? 's' : ''}</span>
               </summary>
               <div class="overflow-x-auto">
-                <table class="table table-sm">
+                <table class="table table-sm table-fixed">
+                  <colgroup>
+                    <col style="width: 20%" />
+                    <col style="width: 20%" />
+                    <col style="width: 30%" />
+                    <col style="width: 15%" />
+                    <col style="width: 15%" />
+                  </colgroup>
                   <thead>
                     <tr class="text-xs uppercase text-base-content/50">
                       <th>Time</th>

@@ -2,11 +2,11 @@ import { Hono } from 'hono';
 import { db } from '../db/index.js';
 import { folders, projects, testCases } from '../db/schema.js';
 import { eq, and, isNull } from 'drizzle-orm';
-import type { AuthEnv } from '../middleware/auth.js';
+import { type AuthEnv, requireEditor, requireAdmin } from '../middleware/auth.js';
 
 const folderRoutes = new Hono<AuthEnv>();
 
-folderRoutes.post('/:projectId/folders', async (c) => {
+folderRoutes.post('/:projectId/folders', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
   if (project.length === 0) return c.notFound();
@@ -28,10 +28,10 @@ folderRoutes.post('/:projectId/folders', async (c) => {
   }
 
   await db.insert(folders).values({ projectId, parentId, name, path });
-  return c.redirect(`/projects/${projectId}/test-cases`);
+  return c.redirect(`/projects/${projectId}/test-cases?toast=Folder created`);
 });
 
-folderRoutes.post('/:projectId/folders/:folderId/rename', async (c) => {
+folderRoutes.post('/:projectId/folders/:folderId/rename', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const folderId = c.req.param('folderId');
   const body = await c.req.parseBody();
@@ -59,10 +59,10 @@ folderRoutes.post('/:projectId/folders/:folderId/rename', async (c) => {
     }
   }
 
-  return c.redirect(`/projects/${projectId}/test-cases?folder=${folderId}`);
+  return c.redirect(`/projects/${projectId}/test-cases?folder=${folderId}&toast=Folder renamed`);
 });
 
-folderRoutes.post('/:projectId/folders/:folderId/move', async (c) => {
+folderRoutes.post('/:projectId/folders/:folderId/move', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const folderId = c.req.param('folderId');
   const body = await c.req.parseBody();
@@ -102,7 +102,7 @@ folderRoutes.post('/:projectId/folders/:folderId/move', async (c) => {
   return c.redirect(`/projects/${projectId}/test-cases?folder=${folderId}`);
 });
 
-folderRoutes.post('/:projectId/folders/:folderId/delete', async (c) => {
+folderRoutes.post('/:projectId/folders/:folderId/delete', requireAdmin, async (c) => {
   const projectId = c.req.param('projectId');
   const folderId = c.req.param('folderId');
 
@@ -119,7 +119,7 @@ folderRoutes.post('/:projectId/folders/:folderId/delete', async (c) => {
     await db.delete(folders).where(eq(folders.id, id));
   }
 
-  return c.redirect(`/projects/${projectId}/test-cases`);
+  return c.redirect(`/projects/${projectId}/test-cases?toast=Folder deleted`);
 });
 
 function getDescendantIds(parentId: string, allFolders: { id: string; parentId: string | null }[]): string[] {

@@ -6,7 +6,7 @@ import { Layout, type Breadcrumb } from '../views/layout.js';
 import { ProjectListView } from '../views/projects/list.js';
 import { ProjectFormView } from '../views/projects/form.js';
 import { ProjectDetailView } from '../views/projects/detail.js';
-import type { AuthEnv } from '../middleware/auth.js';
+import { type AuthEnv, requireEditor, requireAdmin } from '../middleware/auth.js';
 
 const projectRoutes = new Hono<AuthEnv>();
 
@@ -46,7 +46,7 @@ projectRoutes.get('/', async (c) => {
   );
 });
 
-projectRoutes.get('/new', (c) => {
+projectRoutes.get('/new', requireEditor, (c) => {
   const user = c.get('user');
   return c.html(
     <Layout title="New Project" user={user} activePage="projects" breadcrumbs={[{ label: "Projects", href: "/projects" }, { label: "New Project" }]}>
@@ -55,7 +55,7 @@ projectRoutes.get('/new', (c) => {
   );
 });
 
-projectRoutes.post('/', async (c) => {
+projectRoutes.post('/', requireEditor, async (c) => {
   const user = c.get('user');
   const body = await c.req.parseBody();
   const name = (body.name as string || '').trim();
@@ -83,7 +83,7 @@ projectRoutes.post('/', async (c) => {
     createdBy: user.id,
   }).returning();
 
-  return c.redirect(`/projects/${project.id}`);
+  return c.redirect(`/projects/${project.id}?toast=Project created`);
 });
 
 projectRoutes.get('/:id', async (c) => {
@@ -118,7 +118,7 @@ projectRoutes.get('/:id', async (c) => {
   );
 });
 
-projectRoutes.get('/:id/edit', async (c) => {
+projectRoutes.get('/:id/edit', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('id');
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
@@ -139,7 +139,7 @@ projectRoutes.get('/:id/edit', async (c) => {
   );
 });
 
-projectRoutes.post('/:id', async (c) => {
+projectRoutes.post('/:id', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('id');
   const body = await c.req.parseBody();
@@ -168,13 +168,13 @@ projectRoutes.post('/:id', async (c) => {
     .set({ name, description: description || null, githubOwner, githubRepo, githubBranch: githubBranch || 'main', githubTestPath, updatedAt: new Date() })
     .where(eq(projects.id, projectId));
 
-  return c.redirect(`/projects/${projectId}`);
+  return c.redirect(`/projects/${projectId}?toast=Project updated`);
 });
 
-projectRoutes.post('/:id/delete', async (c) => {
+projectRoutes.post('/:id/delete', requireAdmin, async (c) => {
   const projectId = c.req.param('id');
   await db.delete(projects).where(eq(projects.id, projectId));
-  return c.redirect('/projects');
+  return c.redirect('/projects?toast=Project deleted');
 });
 
 export { projectRoutes };

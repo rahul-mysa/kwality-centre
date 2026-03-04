@@ -1,6 +1,6 @@
 # Kwality Centre — Development Plan
 
-> Last updated: Feb 20, 2026
+> Last updated: Feb 21, 2026
 
 ## Project Structure
 
@@ -182,14 +182,14 @@ attachments
 
 | Task | Description |
 |------|-------------|
-| 1.1 | Initialize project: `package.json`, TypeScript, Hono, Drizzle, Tailwind, HTMX |
-| 1.2 | Set up local Postgres database |
-| 1.3 | Define Drizzle schema for all tables, run initial migration |
-| 1.4 | Create base layout (JSX): HTML shell, navbar, sidebar |
-| 1.5 | Implement Google OAuth: login page, callback, session cookie, logout |
-| 1.6 | Auth middleware: protect all routes, redirect to login if unauthenticated |
-| 1.7 | Project CRUD: list, create, edit, delete |
-| 1.8 | Project selection: click a project → scoped sidebar navigation |
+| ✅ 1.1 | Initialize project: `package.json`, TypeScript, Hono, Drizzle, Tailwind, HTMX |
+| ✅ 1.2 | Set up local Postgres database |
+| ✅ 1.3 | Define Drizzle schema for all tables, run initial migration |
+| ✅ 1.4 | Create base layout (JSX): HTML shell, navbar, sidebar |
+| ✅ 1.5 | Implement Google OAuth: login page, callback, session cookie, logout |
+| ✅ 1.6 | Auth middleware: protect all routes, redirect to login if unauthenticated |
+| ✅ 1.7 | Project CRUD: list, create, edit, delete |
+| ✅ 1.8 | Project selection: click a project → scoped sidebar navigation |
 
 **Milestone**: User can log in with Google, create projects, and navigate between them.
 
@@ -200,21 +200,21 @@ attachments
 
 | Task | Description |
 |------|-------------|
-| 2.1 | Test case list page: table with columns (title, priority, type, status, steps count) |
-| 2.2 | Search: HTMX-powered search with debounce |
-| 2.3 | Filters: priority, type, status dropdowns (HTMX partial page updates) |
-| 2.4 | Sorting: click column headers to sort |
-| 2.5 | Pagination: server-side, HTMX-driven |
-| 2.6 | Create test case form: title, description, preconditions, priority, type, tags |
-| 2.7 | Step builder: add/remove/reorder steps (action, data, expected result) |
-| 2.8 | Edit test case: pre-populated form, update in place |
-| 2.9 | Delete test case: confirmation modal, cascade delete steps |
-| 2.10 | ✅ Bulk actions: select multiple → bulk update status or delete |
-| 2.11 | Copy test case: duplicate with "(Copy)" suffix |
-| 2.12 | Folder tree: collapsible tree view in test cases page sidebar/panel |
-| 2.13 | ✅ Folder CRUD: create, rename, move, delete folders |
-| 2.14 | Assign test cases to folders (via form dropdown or drag-and-drop) |
-| 2.15 | Filter test cases by folder: click a folder to show only its test cases |
+| ✅ 2.1 | Test case list page: table with columns (title, priority, type, status, steps count) |
+| ✅ 2.2 | Search: HTMX-powered search with debounce |
+| ✅ 2.3 | Filters: priority, type, status dropdowns (HTMX partial page updates) |
+| ✅ 2.4 | Sorting: click column headers to sort |
+| ✅ 2.5 | Pagination: server-side with sliding window page numbers |
+| ✅ 2.6 | Create test case form: title, description, preconditions, priority, type, tags |
+| ✅ 2.7 | Step builder: add/remove/reorder steps (action, data, expected result) |
+| ✅ 2.8 | Edit test case: pre-populated form, update in place |
+| ✅ 2.9 | Delete test case: confirmation modal, cascade delete steps |
+| ✅ 2.10 | Bulk actions: select multiple → bulk update status or delete |
+| ✅ 2.11 | Copy test case: duplicate with "(Copy)" suffix |
+| ✅ 2.12 | Folder tree: collapsible tree view in test cases page sidebar/panel |
+| ✅ 2.13 | Folder CRUD: create, rename, move, delete folders (with written confirmation) |
+| ✅ 2.14 | Assign test cases to folders (via form dropdown or drag-and-drop) |
+| ✅ 2.15 | Filter test cases by folder: click a folder to show only its test cases |
 
 **Milestone**: Full CRUD for test cases with search, filter, sort, step builder, and folder organization.
 
@@ -225,13 +225,13 @@ attachments
 
 | Task | Description |
 |------|-------------|
-| 3.1 | Suite list page: table with name, case count, created date |
-| 3.2 | Create suite: name, description |
-| 3.3 | Add test cases to suite: searchable multi-select picker |
-| 3.4 | Remove test cases from suite |
+| ✅ 3.1 | Suite list page: table with name, case count, created date |
+| ✅ 3.2 | Create suite: name, description |
+| ✅ 3.3 | Add test cases to suite: searchable multi-select picker + drag-and-drop tree |
+| ✅ 3.4 | Remove test cases from suite (bulk select and remove) |
 | 3.5 | Reorder test cases within a suite (drag-and-drop with SortableJS) |
-| 3.6 | Suite detail view: shows all contained test cases with their priority/status |
-| 3.7 | Edit/delete suite |
+| ✅ 3.6 | Suite detail view: shows all contained test cases with their priority/status |
+| ✅ 3.7 | Edit/delete suite |
 
 **Milestone**: Test cases can be organized into suites for structured test execution.
 
@@ -244,16 +244,16 @@ attachments
 
 | Task | Description |
 |------|-------------|
-| 4.1 | Create test run: select suite, set name, environment, assignee |
-| 4.2 | Auto-populate run with all test cases from the selected suite (status: not_run) |
-| 4.3 | Run execution UI: checklist view showing each case with its steps |
-| 4.4 | Mark result per case: pass / fail / blocked / skipped buttons (HTMX inline update) |
-| 4.5 | Add comments per result (inline text area) |
-| 4.6 | Add GitHub issue link per result (for linking bugs) |
-| 4.7 | Progress bar: "12 of 20 executed" with percentage |
-| 4.8 | Save progress: run stays in "in_progress", resume later |
-| 4.9 | Complete run: lock results, set completed timestamp |
-| 4.10 | Run detail view: full results table with status badges |
+| ✅ 4.1 | Create test run: select suite, set name, environment |
+| ✅ 4.2 | Auto-populate run with all test cases from the selected suite (status: not_run) |
+| ✅ 4.3 | Run execution UI: dedicated read-only test case view with result marking |
+| ✅ 4.4 | Mark result per case: pass / fail / blocked / skipped / reset buttons |
+| ✅ 4.5 | Add comments per result (EasyMDE markdown editor) |
+| ✅ 4.6 | Add GitHub issue link per result (for linking bugs) |
+| ✅ 4.7 | Progress bar: pass/fail/blocked counts with percentage |
+| ✅ 4.8 | Save progress: run stays in "in_progress", resume later |
+| ✅ 4.9 | Complete run: lock results, set completed timestamp. Reopen supported. |
+| ✅ 4.10 | Run detail view: full results table with status badges, search, filters, sorting |
 | 4.11 | Filter results by status (show only failures) |
 
 **Milestone**: End-to-end test execution workflow — create run, execute, record results with GitHub bug links.
@@ -282,21 +282,21 @@ attachments
 
 | Task | Description |
 |------|-------------|
-| 6.1 | Settings page: Xray Cloud credentials (Client ID, Client Secret, Project Key) |
-| 6.2 | "Test Connection" button: verify credentials, show project info |
-| 6.3 | Import flow: authenticate → fetch all test cases with folder info (paginated, 100 at a time) |
-| 6.4 | **Folder reconstruction**: parse `folder.path` from each test, create matching folder hierarchy in DB |
-| 6.5 | Preview page: table of test cases to import with field mapping, grouped by folder |
-| 6.6 | Field mapping: Xray priority/status → Kwality Centre enums |
-| 6.7 | Jira wiki markup → HTML/plain text conversion |
-| 6.8 | Execute import: create folders, then test cases + steps in bulk (transactional) |
-| 6.9 | Import summary: "Imported 1,611 test cases across 97 folders. 42 had no steps." |
-| 6.10 | Store `xray_key` and `xray_issue_id` for traceability |
-| 6.11 | Duplicate detection: skip or flag cases that already exist (by xray_key) |
-| 6.12 | Assign each imported test case to its corresponding folder |
-| 6.13 | *(Phase 2 — optional)* Attachment download: issue-level via Jira REST API (requires Jira API token) |
-| 6.14 | *(Phase 2 — optional)* Attachment download: step-level via Xray REST API (`/api/v2/attachments/{id}`) |
-| 6.15 | *(Phase 2 — optional)* Link downloaded attachments to test cases / steps in `attachments` table |
+| ✅ 6.1 | Settings page: Xray Cloud credentials (Client ID, Client Secret, Project Key) |
+| ✅ 6.2 | "Test Connection" button: verify credentials, show project info |
+| ✅ 6.3 | Import flow: authenticate → fetch all test cases with folder info (paginated, 100 at a time) |
+| ✅ 6.4 | **Folder reconstruction**: parse `folder.path` from each test, create matching folder hierarchy in DB |
+| ✅ 6.5 | Preview page: table of test cases to import with field mapping, grouped by folder |
+| ✅ 6.6 | Field mapping: Xray priority/status → Kwality Centre enums |
+| ✅ 6.7 | Jira wiki markup → HTML/plain text conversion |
+| ✅ 6.8 | Execute import: create folders, then test cases + steps in bulk (transactional) |
+| ✅ 6.9 | Import summary: "Imported 1,611 test cases across 97 folders. 42 had no steps." |
+| ✅ 6.10 | Store `xray_key` and `xray_issue_id` for traceability |
+| ✅ 6.11 | Duplicate detection: skip or flag cases that already exist (by xray_key) |
+| ✅ 6.12 | Assign each imported test case to its corresponding folder |
+| 6.13 | *(Optional)* Attachment download: issue-level via Jira REST API (requires Jira API token) |
+| 6.14 | *(Optional)* Attachment download: step-level via Xray REST API (`/api/v2/attachments/{id}`) |
+| 6.15 | *(Optional)* Link downloaded attachments to test cases / steps in `attachments` table |
 
 **Xray Folder Data** (from live API scan, Feb 2026):
 - 97 unique folder paths discovered
@@ -324,18 +324,18 @@ attachments
 
 | Task | Description |
 |------|-------------|
-| 6b.1 | "Import Executions" button on the Xray import/settings page |
-| 6b.2 | Fetch all test executions via `getTestExecutions` (paginated, 100 at a time) |
-| 6b.3 | For each execution, create a `test_run` record: name = `"{xray_key}: {summary}"`, map status, set timestamps |
-| 6b.4 | For each test run within an execution, look up the test case by `xray_key` → create `test_result` record |
-| 6b.5 | Status mapping: PASSED→passed, FAILED→failed, BLOCKED→blocked, TO DO→not_run, NOTREQUIRED→skipped, EXECUTING→not_run |
-| 6b.6 | Compute `duration_seconds` from `startedOn`/`finishedOn` where both exist |
-| 6b.7 | Import `comment` as `notes` on each test result |
-| 6b.8 | Set `test_run.started_at` = earliest `startedOn`, `completed_at` = latest `finishedOn` |
-| 6b.9 | Set `test_run.environment` from `testEnvironments[0]` if available |
-| 6b.10 | Import summary: "Imported 52 executions with 468 test results." |
-| 6b.11 | Skip results for test cases not found in DB (log warning with xray_key) |
-| 6b.12 | Duplicate detection: skip executions already imported (by xray_key on test_run name) |
+| ✅ 6b.1 | "Import Executions" button on the Xray import/settings page |
+| ✅ 6b.2 | Fetch all test executions via `getTestExecutions` (paginated, 100 at a time) |
+| ✅ 6b.3 | For each execution, create a `test_run` record: name = `"{xray_key}: {summary}"`, map status, set timestamps |
+| ✅ 6b.4 | For each test run within an execution, look up the test case by `xray_key` → create `test_result` record |
+| ✅ 6b.5 | Status mapping: PASSED→passed, FAILED→failed, BLOCKED→blocked, TO DO→not_run, NOTREQUIRED→skipped, EXECUTING→not_run |
+| ✅ 6b.6 | Compute `duration_seconds` from `startedOn`/`finishedOn` where both exist |
+| ✅ 6b.7 | Import `comment` as `notes` on each test result |
+| ✅ 6b.8 | Set `test_run.started_at` = earliest `startedOn`, `completed_at` = latest `finishedOn` |
+| ✅ 6b.9 | Set `test_run.environment` from `testEnvironments[0]` if available |
+| ✅ 6b.10 | Import summary: "Imported 52 executions with 468 test results." |
+| ✅ 6b.11 | Skip results for test cases not found in DB (log warning with xray_key) |
+| ✅ 6b.12 | Duplicate detection: skip executions already imported (by xray_key on test_run name) |
 
 **Xray Execution Data** (from live API scan, Feb 2026):
 - 52 test executions containing 468 total test run results
@@ -373,19 +373,55 @@ attachments
 
 | Task | Description |
 |------|-------------|
-| 8.1 | Error handling: user-friendly error pages (404, 500) |
-| 8.2 | Toast notifications: success/error feedback on all actions |
-| 8.3 | Loading indicators: HTMX `hx-indicator` spinners |
-| 8.4 | Empty states: helpful prompts when no data exists |
+| ✅ 8.1 | Error handling: user-friendly 404 page |
+| ✅ 8.2 | Toast notifications: success/error feedback on all actions |
+| ✅ 8.3 | Loading indicators: HTMX `hx-indicator` spinners + form submit spinners |
+| ✅ 8.4 | Empty states: helpful prompts when no data exists |
 | 8.5 | Responsive design: ensure usability on tablet screens |
 | 8.6 | Dockerfile + docker-compose.yml (app, postgres, nginx containers) |
 | 8.7 | Digital Ocean droplet setup: Docker, `docker compose up -d` |
 | 8.8 | SSL setup: Let's Encrypt via Certbot / nginx container |
 | 8.9 | CI/CD: GitHub Actions → SSH into VM → `docker compose pull && docker compose up -d` |
 | 8.10 | Postgres backups: automated daily `pg_dump` via cron |
-| 8.11 | README with setup instructions |
+| ✅ 8.11 | README with setup instructions |
 
 **Milestone**: App is live, secure, and maintainable in production.
+
+---
+
+### Phase 9: Automated Test Integration ✅
+**Goal**: Display automated test definitions from GitHub and track execution results.
+
+| Task | Description |
+|------|-------------|
+| ✅ 9.1 | Project settings: GitHub repo config (owner, repo, branch, test path) |
+| ✅ 9.2 | GitHub service: fetch spec files, parse describe/it blocks (Detox + Playwright) |
+| ✅ 9.3 | Automated Tests page: spec files grouped by folder with test counts |
+| ✅ 9.4 | Automated Runs page: tabular view with date grouping, date/version filters |
+| ✅ 9.5 | API endpoint: POST automated test results (`/api/projects/:id/automated-results`) |
+| ✅ 9.6 | Run detail page: renders both running-report and test-results.json formats |
+| ✅ 9.7 | Historical running report import script (1,459 runs imported) |
+| ✅ 9.8 | Sidebar reorganization: Manual and Automated sections |
+| ✅ 9.9 | Upload script for CI integration |
+
+**Milestone**: Automated test cases visible from GitHub, results tracked with historical data.
+
+---
+
+### Phase 10: Authorization & Roles ✅
+**Goal**: Role-based access control to restrict who can edit vs view.
+
+| Task | Description |
+|------|-------------|
+| ✅ 10.1 | Three roles: Viewer (read-only), Editor (create/edit), Admin (full + delete + import + user management) |
+| ✅ 10.2 | `role` column on users table, default `viewer` |
+| ✅ 10.3 | Role included in JWT session token |
+| ✅ 10.4 | Server-side route guards: `requireEditor`, `requireAdmin` on all write endpoints |
+| ✅ 10.5 | CSS-based UI hiding: action buttons hidden based on user role |
+| ✅ 10.6 | Admin user management page: change roles via dropdown |
+| ✅ 10.7 | `ADMIN_EMAILS` env var for auto-promoting admins on first login |
+
+**Milestone**: Granular access control — viewers can browse, editors can work, admins can manage.
 
 ---
 
@@ -425,6 +461,15 @@ ALLOWED_DOMAINS=getmysa.com
 XRAY_CLIENT_ID=your-xray-client-id
 XRAY_CLIENT_SECRET=your-xray-client-secret
 JIRA_PROJECT_KEY=TEST
+
+# GitHub (for automated test integration)
+GITHUB_TOKEN=ghp_your-personal-access-token
+
+# Authorization
+ADMIN_EMAILS=your-email@company.com
+
+# API key (for automated results upload)
+KC_API_KEY=your-api-key
 
 # App
 SESSION_SECRET=random-secret-string-at-least-32-chars

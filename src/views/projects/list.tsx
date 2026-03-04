@@ -19,7 +19,7 @@ export const ProjectListView: FC<{ projects: Project[] }> = ({ projects }) => (
         <h1 class="text-2xl font-bold">Projects</h1>
         <p class="text-base-content/60 text-sm mt-1">Manage your test projects — {projects.length} project{projects.length !== 1 ? 's' : ''}</p>
       </div>
-      <a href="/projects/new" class="btn btn-primary btn-sm gap-2">
+      <a href="/projects/new" class="btn btn-primary btn-sm gap-2 editor-action">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
         New Project
       </a>

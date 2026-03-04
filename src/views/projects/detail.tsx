@@ -24,9 +24,9 @@ export const ProjectDetailView: FC<ProjectDetailProps> = ({ project, testCaseCou
         )}
       </div>
       <div class="flex gap-2">
-        <a href={`/projects/${project.id}/edit`} class="btn btn-ghost btn-sm">Edit</a>
+        <a href={`/projects/${project.id}/edit`} class="btn btn-ghost btn-sm editor-action">Edit</a>
         <form method="POST" action={`/projects/${project.id}/delete`} onsubmit="return confirm('Delete this project and all its data?')">
-          <button type="submit" class="btn btn-ghost btn-sm text-error">Delete</button>
+          <button type="submit" class="btn btn-ghost btn-sm text-error admin-action">Delete</button>
         </form>
       </div>
     </div>

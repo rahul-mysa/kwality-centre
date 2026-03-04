@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 import { testSuites, suiteTestCases, testCases, testSteps, projects, folders } from '../db/schema.js';
 import { eq, desc, asc, count, sql, ilike, and, notInArray, inArray, isNull, type SQL } from 'drizzle-orm';
 import { Layout } from '../views/layout.js';
-import type { AuthEnv } from '../middleware/auth.js';
+import { type AuthEnv, requireEditor, requireAdmin } from '../middleware/auth.js';
 import { PriorityBadge, StatusBadge } from '../views/components/badge.js';
 import { EmptyState } from '../views/components/empty-state.js';
 import type { FC } from 'hono/jsx';
@@ -45,7 +45,7 @@ suiteRoutes.get('/:projectId/suites', async (c) => {
 });
 
 // --- New suite form ---
-suiteRoutes.get('/:projectId/suites/new', async (c) => {
+suiteRoutes.get('/:projectId/suites/new', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
@@ -60,7 +60,7 @@ suiteRoutes.get('/:projectId/suites/new', async (c) => {
 });
 
 // --- Create suite ---
-suiteRoutes.post('/:projectId/suites', async (c) => {
+suiteRoutes.post('/:projectId/suites', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const body = await c.req.parseBody();
@@ -81,7 +81,7 @@ suiteRoutes.post('/:projectId/suites', async (c) => {
     projectId, name, description: description || null, createdBy: user.id,
   }).returning();
 
-  return c.redirect(`/projects/${projectId}/suites/${suite.id}`);
+  return c.redirect(`/projects/${projectId}/suites/${suite.id}?toast=Suite created`);
 });
 
 // --- Suite detail ---
@@ -178,7 +178,7 @@ suiteRoutes.get('/:projectId/suites/:suiteId/folder-cases/:folderId', async (c) 
 });
 
 // --- Edit suite form ---
-suiteRoutes.get('/:projectId/suites/:suiteId/edit', async (c) => {
+suiteRoutes.get('/:projectId/suites/:suiteId/edit', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const suiteId = c.req.param('suiteId');
@@ -197,7 +197,7 @@ suiteRoutes.get('/:projectId/suites/:suiteId/edit', async (c) => {
 });
 
 // --- Update suite ---
-suiteRoutes.post('/:projectId/suites/:suiteId', async (c) => {
+suiteRoutes.post('/:projectId/suites/:suiteId', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const suiteId = c.req.param('suiteId');
@@ -217,15 +217,15 @@ suiteRoutes.post('/:projectId/suites/:suiteId', async (c) => {
   }
 
   await db.update(testSuites).set({ name, description: description || null, updatedAt: new Date() }).where(eq(testSuites.id, suiteId));
-  return c.redirect(`/projects/${projectId}/suites/${suiteId}`);
+  return c.redirect(`/projects/${projectId}/suites/${suiteId}?toast=Suite updated`);
 });
 
 // --- Delete suite ---
-suiteRoutes.post('/:projectId/suites/:suiteId/delete', async (c) => {
+suiteRoutes.post('/:projectId/suites/:suiteId/delete', requireAdmin, async (c) => {
   const projectId = c.req.param('projectId');
   const suiteId = c.req.param('suiteId');
   await db.delete(testSuites).where(eq(testSuites.id, suiteId));
-  return c.redirect(`/projects/${projectId}/suites`);
+  return c.redirect(`/projects/${projectId}/suites?toast=Suite deleted`);
 });
 
 // --- Search test cases to add (HTMX partial) ---
@@ -266,7 +266,7 @@ suiteRoutes.get('/:projectId/suites/:suiteId/search-cases', async (c) => {
                 {tc.xrayKey && <span class="text-xs text-base-content/40">{tc.xrayKey}</span>}
               </div>
             </div>
-            <button type="submit" class="btn btn-ghost btn-xs btn-circle">
+            <button type="submit" class="btn btn-ghost btn-xs btn-circle editor-action">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
             </button>
           </form>
@@ -277,7 +277,7 @@ suiteRoutes.get('/:projectId/suites/:suiteId/search-cases', async (c) => {
 });
 
 // --- Add test case to suite ---
-suiteRoutes.post('/:projectId/suites/:suiteId/add-case', async (c) => {
+suiteRoutes.post('/:projectId/suites/:suiteId/add-case', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const suiteId = c.req.param('suiteId');
   const body = await c.req.parseBody();
@@ -297,7 +297,7 @@ suiteRoutes.post('/:projectId/suites/:suiteId/add-case', async (c) => {
 });
 
 // --- Remove test cases from suite (supports multiple) ---
-suiteRoutes.post('/:projectId/suites/:suiteId/remove-cases', async (c) => {
+suiteRoutes.post('/:projectId/suites/:suiteId/remove-cases', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const suiteId = c.req.param('suiteId');
   const body = await c.req.parseBody({ all: true });
@@ -356,7 +356,7 @@ const SuiteListView: FC<{ project: { id: string; name: string }; suites: SuiteRo
         <h1 class="text-2xl font-bold">Test Suites</h1>
         <p class="text-base-content/60 text-sm mt-1">{project.name} — {suites.length} suite{suites.length !== 1 ? 's' : ''}</p>
       </div>
-      <a href={`/projects/${project.id}/suites/new`} class="btn btn-primary btn-sm gap-2">
+      <a href={`/projects/${project.id}/suites/new`} class="btn btn-primary btn-sm gap-2 editor-action">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
         New Suite
       </a>
@@ -441,9 +441,9 @@ const SuiteDetailView: FC<{ project: { id: string; name: string }; suite: { id: 
         <p class="text-xs text-base-content/40 mt-2">{cases.length} test case{cases.length !== 1 ? 's' : ''} in this suite</p>
       </div>
       <div class="flex gap-2">
-        <a href={`/projects/${project.id}/suites/${suite.id}/edit`} class="btn btn-ghost btn-sm">Edit</a>
+        <a href={`/projects/${project.id}/suites/${suite.id}/edit`} class="btn btn-ghost btn-sm editor-action">Edit</a>
         <form method="POST" action={`/projects/${project.id}/suites/${suite.id}/delete`} onsubmit="return confirm('Delete this suite? Test cases will not be deleted.')">
-          <button type="submit" class="btn btn-ghost btn-sm text-error">Delete</button>
+          <button type="submit" class="btn btn-ghost btn-sm text-error admin-action">Delete</button>
         </form>
       </div>
     </div>
@@ -489,7 +489,7 @@ const SuiteDetailView: FC<{ project: { id: string; name: string }; suite: { id: 
                 <button
                   type="submit"
                   id="remove-selected-btn"
-                  class="btn btn-error btn-sm btn-outline gap-1 hidden"
+                  class="btn btn-error btn-sm btn-outline gap-1 hidden editor-action"
                   onclick="return confirm('Remove selected test cases from this suite?')"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>

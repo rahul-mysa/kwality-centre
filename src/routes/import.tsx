@@ -3,12 +3,12 @@ import { db } from '../db/index.js';
 import { projects } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import { Layout } from '../views/layout.js';
-import type { AuthEnv } from '../middleware/auth.js';
+import { type AuthEnv, requireAdmin } from '../middleware/auth.js';
 import { importFromXray, type ImportResult } from '../services/xray-import.js';
 
 const importRoutes = new Hono<AuthEnv>();
 
-importRoutes.get('/:projectId/import', async (c) => {
+importRoutes.get('/:projectId/import', requireAdmin, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
@@ -24,7 +24,7 @@ importRoutes.get('/:projectId/import', async (c) => {
   );
 });
 
-importRoutes.post('/:projectId/import/xray', async (c) => {
+importRoutes.post('/:projectId/import/xray', requireAdmin, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);

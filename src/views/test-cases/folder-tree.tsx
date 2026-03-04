@@ -31,9 +31,9 @@ const FolderActions: FC<{ node: FolderNode; projectId: string }> = ({ node, proj
       <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 5v.01M12 12v.01M12 19v.01" /></svg>
     </label>
     <ul tabindex={0} class="dropdown-content menu menu-xs bg-base-100 rounded-box shadow-lg border border-base-300 w-36 z-50 p-1">
-      <li><button onclick={`event.preventDefault(); document.getElementById('rename-folder-modal-${node.id}').showModal()`}>Rename</button></li>
-      <li><button onclick={`event.preventDefault(); document.getElementById('move-folder-modal-${node.id}').showModal()`}>Move</button></li>
-      <li><button onclick={`event.preventDefault(); document.getElementById('delete-folder-modal-${node.id}').showModal()`} class="text-error">Delete</button></li>
+      <li><button class="editor-action" onclick={`event.preventDefault(); document.getElementById('rename-folder-modal-${node.id}').showModal()`}>Rename</button></li>
+      <li><button class="editor-action" onclick={`event.preventDefault(); document.getElementById('move-folder-modal-${node.id}').showModal()`}>Move</button></li>
+      <li><button class="text-error admin-action" onclick={`event.preventDefault(); document.getElementById('delete-folder-modal-${node.id}').showModal()`}>Delete</button></li>
     </ul>
   </div>
 );
@@ -87,7 +87,7 @@ const FolderItem: FC<{ node: FolderNode; projectId: string; activeFolderId: stri
             </div>
             <div class="modal-action">
               <button type="button" class="btn btn-ghost" onclick={`document.getElementById('rename-folder-modal-${node.id}').close()`}>Cancel</button>
-              <button type="submit" class="btn btn-primary">Rename</button>
+              <button type="submit" class="btn btn-primary editor-action">Rename</button>
             </div>
           </form>
         </div>
@@ -110,7 +110,7 @@ const FolderItem: FC<{ node: FolderNode; projectId: string; activeFolderId: stri
             </div>
             <div class="modal-action">
               <button type="button" class="btn btn-ghost" onclick={`document.getElementById('move-folder-modal-${node.id}').close()`}>Cancel</button>
-              <button type="submit" class="btn btn-primary">Move</button>
+              <button type="submit" class="btn btn-primary editor-action">Move</button>
             </div>
           </form>
         </div>
@@ -144,7 +144,7 @@ const FolderItem: FC<{ node: FolderNode; projectId: string; activeFolderId: stri
             />
             <div class="modal-action">
               <button type="button" class="btn btn-ghost" onclick={`document.getElementById('delete-folder-modal-${node.id}').close()`}>Cancel</button>
-              <button type="submit" class="btn btn-error" id={`delete-folder-btn-${node.id}`} disabled>Delete</button>
+              <button type="submit" class="btn btn-error admin-action" id={`delete-folder-btn-${node.id}`} disabled>Delete</button>
             </div>
           </form>
           <script dangerouslySetInnerHTML={{ __html: `
@@ -209,7 +209,7 @@ export const FolderTreePanel: FC<FolderTreeProps> = ({ projectId, folders, activ
         <div class="flex justify-between items-center mb-2 px-2">
           <h3 class="text-xs font-semibold uppercase text-base-content/50">Folders</h3>
           <button
-            class="btn btn-ghost btn-xs"
+            class="btn btn-ghost btn-xs editor-action"
             onclick="document.getElementById('new-folder-modal').showModal()"
             title="New folder"
           >
@@ -263,7 +263,7 @@ const NewFolderModal: FC<{ projectId: string; folders: { id: string; name: strin
         </div>
         <div class="modal-action">
           <button type="button" class="btn btn-ghost" onclick="document.getElementById('new-folder-modal').close()">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create</button>
+          <button type="submit" class="btn btn-primary editor-action">Create</button>
         </div>
       </form>
     </div>

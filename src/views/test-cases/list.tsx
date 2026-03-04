@@ -24,6 +24,7 @@ type Filters = {
   dir: string;
   folder: string;
   subfolders: string;
+  pageSize: string;
 };
 
 type Props = {
@@ -32,6 +33,7 @@ type Props = {
   total: number;
   page: number;
   totalPages: number;
+  pageSize: number;
   filters: Filters;
   folderTree: FolderNode[];
   activeFolderId: string | null;
@@ -60,19 +62,20 @@ const buildQueryString = (filters: Filters, overrides: Record<string, string> = 
   const params = new URLSearchParams({
     search: filters.search, priority: filters.priority, type: filters.type,
     status: filters.status, sort: filters.sort, dir: filters.dir,
-    folder: filters.folder, subfolders: filters.subfolders, page: '1', ...overrides,
+    folder: filters.folder, subfolders: filters.subfolders, pageSize: filters.pageSize,
+    page: '1', ...overrides,
   });
   return params.toString();
 };
 
-export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, totalPages, filters, folderTree, activeFolderId, rootCount, totalCount }) => (
+export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, totalPages, pageSize, filters, folderTree, activeFolderId, rootCount, totalCount }) => (
   <div id="test-case-list-container">
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-2xl font-bold">Test Cases</h1>
         <p class="text-base-content/60 text-sm mt-1">{project.name} — {total} test case{total !== 1 ? 's' : ''}</p>
       </div>
-      <a href={`/projects/${project.id}/test-cases/new${filters.folder && filters.folder !== 'root' ? `?folder=${filters.folder}` : ''}`} class="btn btn-primary btn-sm gap-2">
+      <a href={`/projects/${project.id}/test-cases/new${filters.folder && filters.folder !== 'root' ? `?folder=${filters.folder}` : ''}`} class="btn btn-primary btn-sm gap-2 editor-action">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
         New Test Case
       </a>
@@ -94,18 +97,22 @@ export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, t
           <form method="GET" action={`/projects/${project.id}/test-cases`} class="flex flex-wrap gap-3 items-end">
             <div class="form-control flex-1 min-w-[200px]">
               <label class="label py-1"><span class="label-text text-xs">Search</span></label>
-              <input
-                type="text"
-                name="search"
-                value={filters.search}
-                placeholder="Search by title..."
-                class="input input-bordered input-sm w-full"
-                hx-get={`/projects/${project.id}/test-cases`}
-                hx-trigger="keyup changed delay:300ms"
-                hx-target="#test-case-list-container"
-                hx-swap="outerHTML"
-                hx-include="closest form"
-              />
+              <div class="relative">
+                <input
+                  type="text"
+                  name="search"
+                  value={filters.search}
+                  placeholder="Search by title..."
+                  class="input input-bordered input-sm w-full"
+                  hx-get={`/projects/${project.id}/test-cases`}
+                  hx-trigger="keyup changed delay:300ms"
+                  hx-target="#test-case-list-container"
+                  hx-swap="outerHTML"
+                  hx-include="closest form"
+                  hx-indicator="#search-spinner"
+                />
+                <span id="search-spinner" class="htmx-indicator absolute right-2 top-1/2 -translate-y-1/2"><span class="loading loading-spinner loading-xs"></span></span>
+              </div>
             </div>
             <div class="form-control">
               <label class="label py-1"><span class="label-text text-xs">Priority</span></label>
@@ -114,7 +121,8 @@ export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, t
                 hx-trigger="change"
                 hx-target="#test-case-list-container"
                 hx-swap="outerHTML"
-                hx-include="closest form">
+                hx-include="closest form"
+                hx-indicator="#search-spinner">
                 <option value="">All</option>
                 <option value="critical" selected={filters.priority === 'critical'}>Critical</option>
                 <option value="high" selected={filters.priority === 'high'}>High</option>
@@ -129,7 +137,8 @@ export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, t
                 hx-trigger="change"
                 hx-target="#test-case-list-container"
                 hx-swap="outerHTML"
-                hx-include="closest form">
+                hx-include="closest form"
+                hx-indicator="#search-spinner">
                 <option value="">All</option>
                 <option value="functional" selected={filters.type === 'functional'}>Functional</option>
                 <option value="regression" selected={filters.type === 'regression'}>Regression</option>
@@ -145,7 +154,8 @@ export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, t
                 hx-trigger="change"
                 hx-target="#test-case-list-container"
                 hx-swap="outerHTML"
-                hx-include="closest form">
+                hx-include="closest form"
+                hx-indicator="#search-spinner">
                 <option value="">All</option>
                 <option value="draft" selected={filters.status === 'draft'}>Draft</option>
                 <option value="active" selected={filters.status === 'active'}>Active</option>
@@ -156,6 +166,7 @@ export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, t
             <input type="hidden" name="dir" value={filters.dir} />
             <input type="hidden" name="folder" value={filters.folder} />
             <input type="hidden" name="subfolders" value={filters.subfolders} />
+            <input type="hidden" name="pageSize" value={filters.pageSize} />
             <input type="hidden" name="page" value="1" />
           </form>
         </div>
@@ -198,11 +209,11 @@ export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, t
                   <option value="active">Active</option>
                   <option value="deprecated">Deprecated</option>
                 </select>
-                <button type="submit" class="btn btn-xs btn-outline">Update Status</button>
+                <button type="submit" class="btn btn-xs btn-outline editor-action">Update Status</button>
               </form>
               <form method="post" action={`/projects/${project.id}/test-cases/bulk-delete`} id="bulk-delete-form" onsubmit="return confirm('Delete selected test cases? This cannot be undone.')">
                 <div id="bulk-delete-ids"></div>
-                <button type="submit" class="btn btn-xs btn-error btn-outline gap-1">
+                <button type="submit" class="btn btn-xs btn-error btn-outline gap-1 admin-action">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                   Delete
                 </button>
@@ -273,27 +284,55 @@ export const TestCaseListView: FC<Props> = ({ project, testCases, total, page, t
               })();
             ` }} />
 
-            {totalPages > 1 && (
-              <div class="flex justify-center mt-4">
-                <div class="join">
-                  {page > 1 && (
-                    <a href={`/projects/${project.id}/test-cases?${buildQueryString(filters, { page: String(page - 1) })}`} class="join-item btn btn-sm">&laquo;</a>
-                  )}
-                  {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                    const p = i + 1;
-                    return (
-                      <a href={`/projects/${project.id}/test-cases?${buildQueryString(filters, { page: String(p) })}`} class={`join-item btn btn-sm ${p === page ? 'btn-active' : ''}`}>{p}</a>
-                    );
-                  })}
-                  {page < totalPages && (
-                    <a href={`/projects/${project.id}/test-cases?${buildQueryString(filters, { page: String(page + 1) })}`} class="join-item btn btn-sm">&raquo;</a>
-                  )}
-                </div>
+            <div class="flex items-center justify-between mt-4">
+              <div class="flex items-center gap-2 text-sm text-base-content/50">
+                <span>Show</span>
+                <select class="select select-bordered select-xs w-16" onchange={`window.location='/projects/${project.id}/test-cases?${buildQueryString(filters, { page: '1' })}'.replace('pageSize=${pageSize}', 'pageSize='+this.value)`}>
+                  {[10, 25, 50, 100].map((s) => (
+                    <option value={s} selected={pageSize === s}>{s}</option>
+                  ))}
+                </select>
+                <span>per page</span>
               </div>
-            )}
+              {totalPages > 1 && (
+                <Pagination projectId={project.id} page={page} totalPages={totalPages} filters={filters} />
+              )}
+            </div>
           </div>
         )}
       </div>
     </div>
   </div>
 );
+
+const Pagination: FC<{ projectId: string; page: number; totalPages: number; filters: Filters }> = ({ projectId, page, totalPages, filters }) => {
+  const pageUrl = (p: number) => `/projects/${projectId}/test-cases?${buildQueryString(filters, { page: String(p) })}`;
+
+  const pages: (number | '...')[] = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (page > 3) pages.push('...');
+    const start = Math.max(2, page - 1);
+    const end = Math.min(totalPages - 1, page + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (page < totalPages - 2) pages.push('...');
+    pages.push(totalPages);
+  }
+
+  return (
+    <div class="flex items-center gap-3">
+      <span class="text-sm text-base-content/50">Page {page} of {totalPages}</span>
+      <div class="join">
+        {page > 1 && <a href={pageUrl(page - 1)} class="join-item btn btn-sm">&laquo;</a>}
+        {pages.map((p) =>
+          p === '...'
+            ? <span class="join-item btn btn-sm btn-disabled">...</span>
+            : <a href={pageUrl(p)} class={`join-item btn btn-sm ${p === page ? 'btn-active' : ''}`}>{p}</a>
+        )}
+        {page < totalPages && <a href={pageUrl(page + 1)} class="join-item btn btn-sm">&raquo;</a>}
+      </div>
+    </div>
+  );
+};

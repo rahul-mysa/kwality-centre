@@ -3,8 +3,9 @@ import { setCookie, deleteCookie } from 'hono/cookie';
 import { createSessionToken } from '../middleware/auth.js';
 import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
-import { eq } from 'drizzle-orm';
+import { eq, count } from 'drizzle-orm';
 import { Layout } from '../views/layout.js';
+import type { UserRole } from '../views/layout.js';
 import { LoginPage } from '../views/auth/login.js';
 
 const auth = new Hono();
@@ -94,11 +95,22 @@ auth.get('/google/callback', async (c) => {
       .set({ lastLoginAt: new Date(), name: googleUser.name, avatarUrl: googleUser.picture })
       .where(eq(users.id, dbUser.id));
   } else {
+    const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+    let role: UserRole = 'viewer';
+
+    if (adminEmails.includes(googleUser.email.toLowerCase())) {
+      role = 'admin';
+    } else {
+      const [{ total }] = await db.select({ total: count() }).from(users);
+      if (total === 0) role = 'admin';
+    }
+
     const [newUser] = await db.insert(users)
       .values({
         email: googleUser.email,
         name: googleUser.name,
         avatarUrl: googleUser.picture,
+        role,
       })
       .returning();
     dbUser = newUser;
@@ -109,6 +121,7 @@ auth.get('/google/callback', async (c) => {
     email: dbUser.email,
     name: dbUser.name,
     avatarUrl: dbUser.avatarUrl,
+    role: dbUser.role,
   });
 
   setCookie(c, 'session', sessionToken, {

@@ -1,10 +1,13 @@
 import type { FC } from 'hono/jsx';
 
+export type UserRole = 'admin' | 'editor' | 'viewer';
+
 export type User = {
   id: string;
   email: string;
   name: string;
   avatarUrl: string | null;
+  role: UserRole;
 };
 
 export type ActiveProject = {
@@ -40,9 +43,6 @@ export const Layout: FC<LayoutProps> = ({ title, user, activeProject, activePage
       <script src="https://cdn.jsdelivr.net/npm/easymde@2/dist/easymde.min.js"></script>
       <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
       <style>{`
-        .htmx-indicator { display: none; }
-        .htmx-request .htmx-indicator { display: inline-block; }
-        .htmx-request.htmx-indicator { display: inline-block; }
         .EasyMDEContainer .CodeMirror { font-size: 13px; min-height: 120px; }
         .EasyMDEContainer .editor-toolbar { padding: 0 2px; }
         .EasyMDEContainer .editor-toolbar button { width: 26px; height: 26px; }
@@ -58,9 +58,16 @@ export const Layout: FC<LayoutProps> = ({ title, user, activeProject, activePage
         .prose table { border-collapse: collapse; width: 100%; margin: 8px 0; }
         .prose table th, .prose table td { border: 1px solid #d1d5db; padding: 4px 8px; text-align: left; font-size: 13px; }
         .prose table th { background: #f3f4f6; font-weight: 600; }
+        .role-viewer .editor-action, .role-viewer .admin-action { display: none !important; }
+        .role-editor .admin-action { display: none !important; }
+        .kc-toast { animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 3.7s forwards; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        .htmx-indicator { opacity: 0; transition: opacity 200ms ease-in; }
+        .htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
       `}</style>
     </head>
-    <body class="min-h-screen bg-base-200">
+    <body class={`min-h-screen bg-base-200 ${user ? `role-${user.role}` : ''}`}>
       {user ? (
         <div class="flex h-screen">
           <Sidebar activeProject={activeProject} activePage={activePage} />
@@ -74,7 +81,48 @@ export const Layout: FC<LayoutProps> = ({ title, user, activeProject, activePage
       ) : (
         <main>{children}</main>
       )}
-      <div id="toast-container" class="fixed top-4 right-4 z-[9999]"></div>
+      <div id="toast-container" class="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm"></div>
+      <script dangerouslySetInnerHTML={{ __html: `
+        function showToast(msg, type) {
+          var tc = document.getElementById('toast-container');
+          var cls = type === 'error' ? 'alert-error' : type === 'warning' ? 'alert-warning' : 'alert-success';
+          var el = document.createElement('div');
+          el.className = 'alert ' + cls + ' shadow-lg text-sm py-2 px-4 kc-toast';
+          el.innerHTML = '<span>' + msg + '</span>';
+          tc.appendChild(el);
+          setTimeout(function() { el.remove(); }, 4000);
+        }
+        (function() {
+          var p = new URLSearchParams(window.location.search);
+          var msg = p.get('toast');
+          if (msg) {
+            var type = p.get('toast_type') || 'success';
+            showToast(msg, type);
+            p.delete('toast'); p.delete('toast_type');
+            var clean = window.location.pathname + (p.toString() ? '?' + p.toString() : '');
+            history.replaceState(null, '', clean);
+          }
+        })();
+        document.body.addEventListener('htmx:afterRequest', function(e) {
+          var trigger = e.detail.xhr.getResponseHeader('HX-Trigger');
+          if (trigger) {
+            try {
+              var data = JSON.parse(trigger);
+              if (data.showToast) showToast(data.showToast.message || data.showToast, data.showToast.type || 'success');
+            } catch(ex) {}
+          }
+        });
+        document.addEventListener('submit', function(e) {
+          var form = e.target;
+          if (form.tagName !== 'FORM' || form.method === 'get') return;
+          var btn = form.querySelector('button[type="submit"], button:not([type])');
+          if (btn && !btn.disabled) {
+            btn.disabled = true;
+            btn.dataset.origHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> ' + btn.textContent.trim();
+          }
+        });
+      ` }} />
     </body>
   </html>
 );
@@ -109,11 +157,13 @@ const Navbar: FC<{ user: User; breadcrumbs?: Breadcrumb[] }> = ({ user, breadcru
             </div>
           )}
         </div>
-        <ul tabindex={0} class="dropdown-content menu menu-sm bg-base-100 rounded-box shadow-lg border border-base-300 w-52 mt-3 z-50 p-2">
+        <ul tabindex={0} class="dropdown-content menu menu-sm bg-base-100 rounded-box shadow-lg border border-base-300 w-64 mt-3 z-50 p-2">
           <li class="menu-title px-4 py-2">
-            <span class="font-semibold">{user.name}</span>
-            <span class="text-xs opacity-60">{user.email}</span>
+            <span class="font-semibold truncate">{user.name}</span>
+            <span class="text-xs opacity-60 truncate max-w-full">{user.email}</span>
+            <span class={`badge badge-xs mt-1 ${user.role === 'admin' ? 'badge-error' : user.role === 'editor' ? 'badge-info' : 'badge-ghost'}`}>{user.role}</span>
           </li>
+          {user.role === 'admin' && <li><a href="/admin/users">Manage Users</a></li>}
           <li><a href="/auth/logout">Logout</a></li>
         </ul>
       </div>
@@ -138,6 +188,7 @@ const sidebarIcons: Record<string, string> = {
   'auto-tests': 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4',
   'auto-runs': 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
   import: 'M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10',
+  users: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
 };
 
 const SidebarLink: FC<SidebarLinkProps> = ({ href, label, icon, active }) => (
@@ -170,7 +221,9 @@ const Sidebar: FC<{ activeProject?: ActiveProject | null; activePage?: string }>
 
       {activeProject ? (
         <div class="mt-4 border-t border-base-300 pt-4">
-          <p class="text-xs font-semibold uppercase text-base-content/50 px-3 mb-2">{activeProject.name}</p>
+          <a href={`/projects/${activeProject.id}`} class="block px-3 mb-3">
+            <p class="text-sm font-bold text-base-content truncate">{activeProject.name}</p>
+          </a>
           <ul class="menu menu-sm gap-1">
             <SidebarLink href={`/projects/${activeProject.id}`} label="Overview" icon="overview" active={activePage === 'overview'} />
           </ul>
@@ -192,7 +245,7 @@ const Sidebar: FC<{ activeProject?: ActiveProject | null; activePage?: string }>
             </div>
           )}
 
-          <ul class="menu menu-sm gap-1 mt-1">
+          <ul class="menu menu-sm gap-1 mt-1 admin-action">
             <li class="border-t border-base-200 my-1" />
             <SidebarLink href={`/projects/${activeProject.id}/import`} label="Import" icon="import" active={activePage === 'import'} />
           </ul>
@@ -201,6 +254,7 @@ const Sidebar: FC<{ activeProject?: ActiveProject | null; activePage?: string }>
         <div id="project-nav" hx-get="/api/sidebar-projects" hx-trigger="load" hx-swap="innerHTML">
         </div>
       )}
+
     </nav>
   </aside>
 );

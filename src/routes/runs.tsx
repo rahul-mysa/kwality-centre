@@ -3,7 +3,7 @@ import { db } from '../db/index.js';
 import { testRuns, testResults, testSuites, suiteTestCases, testCases, testSteps, projects } from '../db/schema.js';
 import { eq, desc, asc, count, sql, and, notInArray, type SQL } from 'drizzle-orm';
 import { Layout } from '../views/layout.js';
-import type { AuthEnv } from '../middleware/auth.js';
+import { type AuthEnv, requireEditor, requireAdmin } from '../middleware/auth.js';
 import { RunStatusBadge, ResultStatusBadge, PriorityBadge } from '../views/components/badge.js';
 import { EmptyState } from '../views/components/empty-state.js';
 import type { FC } from 'hono/jsx';
@@ -86,7 +86,7 @@ runRoutes.get('/:projectId/runs', async (c) => {
 });
 
 // --- New run form ---
-runRoutes.get('/:projectId/runs/new', async (c) => {
+runRoutes.get('/:projectId/runs/new', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
@@ -115,7 +115,7 @@ runRoutes.get('/:projectId/runs/new', async (c) => {
 });
 
 // --- Create run ---
-runRoutes.post('/:projectId/runs', async (c) => {
+runRoutes.post('/:projectId/runs', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const body = await c.req.parseBody();
@@ -145,7 +145,7 @@ runRoutes.post('/:projectId/runs', async (c) => {
     );
   }
 
-  return c.redirect(`/projects/${projectId}/runs/${run.id}`);
+  return c.redirect(`/projects/${projectId}/runs/${run.id}?toast=Test run created`);
 });
 
 // --- Run detail / execution page ---
@@ -268,7 +268,7 @@ runRoutes.get('/:projectId/runs/:runId/execute/:resultId', async (c) => {
 });
 
 // --- Update a single result ---
-runRoutes.post('/:projectId/runs/:runId/results/:resultId', async (c) => {
+runRoutes.post('/:projectId/runs/:runId/results/:resultId', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const runId = c.req.param('runId');
@@ -306,23 +306,23 @@ runRoutes.post('/:projectId/runs/:runId/results/:resultId', async (c) => {
 });
 
 // --- Complete run ---
-runRoutes.post('/:projectId/runs/:runId/complete', async (c) => {
+runRoutes.post('/:projectId/runs/:runId/complete', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const runId = c.req.param('runId');
   await db.update(testRuns).set({ status: 'completed', completedAt: new Date(), updatedAt: new Date() }).where(eq(testRuns.id, runId));
-  return c.redirect(`/projects/${projectId}/runs/${runId}`);
+  return c.redirect(`/projects/${projectId}/runs/${runId}?toast=Run completed`);
 });
 
 // --- Reopen run ---
-runRoutes.post('/:projectId/runs/:runId/reopen', async (c) => {
+runRoutes.post('/:projectId/runs/:runId/reopen', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const runId = c.req.param('runId');
   await db.update(testRuns).set({ status: 'in_progress', completedAt: null, updatedAt: new Date() }).where(eq(testRuns.id, runId));
-  return c.redirect(`/projects/${projectId}/runs/${runId}`);
+  return c.redirect(`/projects/${projectId}/runs/${runId}?toast=Run reopened`);
 });
 
 // --- Sync from suite (add new cases that aren't in the run yet) ---
-runRoutes.post('/:projectId/runs/:runId/sync', async (c) => {
+runRoutes.post('/:projectId/runs/:runId/sync', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const runId = c.req.param('runId');
 
@@ -354,11 +354,11 @@ runRoutes.post('/:projectId/runs/:runId/sync', async (c) => {
 });
 
 // --- Delete run ---
-runRoutes.post('/:projectId/runs/:runId/delete', async (c) => {
+runRoutes.post('/:projectId/runs/:runId/delete', requireAdmin, async (c) => {
   const projectId = c.req.param('projectId');
   const runId = c.req.param('runId');
   await db.delete(testRuns).where(eq(testRuns.id, runId));
-  return c.redirect(`/projects/${projectId}/runs`);
+  return c.redirect(`/projects/${projectId}/runs?toast=Test run deleted`);
 });
 
 export { runRoutes };
@@ -430,7 +430,7 @@ const RunListView: FC<{ project: { id: string; name: string }; runs: RunRow[]; f
         <h1 class="text-2xl font-bold">Test Runs</h1>
         <p class="text-base-content/60 text-sm mt-1">{project.name} — {runs.length} run{runs.length !== 1 ? 's' : ''}</p>
       </div>
-      <a href={`/projects/${project.id}/runs/new`} class="btn btn-primary btn-sm gap-2">
+      <a href={`/projects/${project.id}/runs/new`} class="btn btn-primary btn-sm gap-2 editor-action">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
         New Run
       </a>
@@ -558,7 +558,7 @@ const NewRunView: FC<{ project: { id: string; name: string }; suites: { id: stri
           </div>
         </div>
         <div class="flex gap-3 pt-6">
-          <button type="submit" class="btn btn-primary">Create Run</button>
+          <button type="submit" class="btn btn-primary editor-action">Create Run</button>
           <a href={`/projects/${project.id}/runs`} class="btn btn-ghost">Cancel</a>
         </div>
       </form>
@@ -636,7 +636,7 @@ const RunDetailView: FC<{ project: { id: string; name: string }; run: RunDetail;
         <div class="flex gap-2 flex-wrap justify-end">
           {run.status !== 'completed' && run.suiteId && (
             <form method="POST" action={`/projects/${project.id}/runs/${run.id}/sync`} onsubmit="return confirm('Sync new test cases from the suite into this run?')">
-              <button type="submit" class="btn btn-ghost btn-sm gap-1">
+              <button type="submit" class="btn btn-ghost btn-sm gap-1 editor-action">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                 Sync Suite
               </button>
@@ -644,7 +644,7 @@ const RunDetailView: FC<{ project: { id: string; name: string }; run: RunDetail;
           )}
           {run.status !== 'completed' && executed > 0 && (
             <form method="POST" action={`/projects/${project.id}/runs/${run.id}/complete`} onsubmit={`return confirm('Complete this run? ${stats.not_run > 0 ? stats.not_run + ' test(s) are still not executed.' : 'All tests executed.'}')`}>
-              <button type="submit" class="btn btn-success btn-sm gap-1">
+              <button type="submit" class="btn btn-success btn-sm gap-1 editor-action">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
                 Complete Run
               </button>
@@ -652,11 +652,11 @@ const RunDetailView: FC<{ project: { id: string; name: string }; run: RunDetail;
           )}
           {run.status === 'completed' && (
             <form method="POST" action={`/projects/${project.id}/runs/${run.id}/reopen`}>
-              <button type="submit" class="btn btn-ghost btn-sm">Reopen</button>
+              <button type="submit" class="btn btn-ghost btn-sm editor-action">Reopen</button>
             </form>
           )}
           <form method="POST" action={`/projects/${project.id}/runs/${run.id}/delete`} onsubmit="return confirm('Delete this run and all its results?')">
-            <button type="submit" class="btn btn-ghost btn-sm text-error">Delete</button>
+            <button type="submit" class="btn btn-ghost btn-sm text-error admin-action">Delete</button>
           </form>
         </div>
       </div>
@@ -826,7 +826,7 @@ const ExecuteView: FC<ExecuteProps> = ({ project, run, result, testCase, steps, 
                     <form method="POST" action={`${baseUrl}/results/${result.id}`} class="inline">
                       <input type="hidden" name="status" value={s} />
                       <input type="hidden" name="returnTo" value="execute" />
-                      <button type="submit" class={`btn btn-sm ${result.status === s ? statusBtnClass[s] : 'btn-outline ' + statusBtnClass[s]}`}>
+                      <button type="submit" class={`btn btn-sm editor-action ${result.status === s ? statusBtnClass[s] : 'btn-outline ' + statusBtnClass[s]}`}>
                         {s === 'not_run' ? 'Reset' : s.charAt(0).toUpperCase() + s.slice(1)}
                       </button>
                     </form>
@@ -850,7 +850,7 @@ const ExecuteView: FC<ExecuteProps> = ({ project, run, result, testCase, steps, 
                     <label class="label py-0"><span class="label-text text-xs">GitHub Issue</span></label>
                     <input type="text" name="defectUrl" value={result.defectUrl || ''} placeholder="https://github.com/..." class="input input-bordered input-sm w-full text-xs" />
                   </div>
-                  <button type="submit" class="btn btn-primary btn-sm w-full">Save</button>
+                  <button type="submit" class="btn btn-primary btn-sm w-full editor-action">Save</button>
                 </form>
                 <script dangerouslySetInnerHTML={{ __html: `
                   document.addEventListener('DOMContentLoaded', function() {

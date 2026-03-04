@@ -6,11 +6,14 @@ export const testCaseStatusEnum = pgEnum('test_case_status', ['draft', 'active',
 export const runStatusEnum = pgEnum('run_status', ['planned', 'in_progress', 'completed']);
 export const resultStatusEnum = pgEnum('result_status', ['not_run', 'passed', 'failed', 'blocked', 'skipped']);
 
+export const roleEnum = pgEnum('user_role', ['admin', 'editor', 'viewer']);
+
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   email: text('email').notNull().unique(),
   name: text('name').notNull(),
   avatarUrl: text('avatar_url'),
+  role: roleEnum('role').default('viewer').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   lastLoginAt: timestamp('last_login_at').defaultNow().notNull(),
 });

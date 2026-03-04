@@ -11,6 +11,7 @@ import { importRoutes } from './routes/import.js';
 import { suiteRoutes } from './routes/suites.js';
 import { runRoutes } from './routes/runs.js';
 import { automationRoutes, automationApiRoutes } from './routes/automation.js';
+import { adminRoutes } from './routes/admin.js';
 import { authMiddleware, type AuthEnv } from './middleware/auth.js';
 import { db } from './db/index.js';
 import { users } from './db/schema.js';
@@ -46,6 +47,7 @@ app.route('/projects', importRoutes);
 app.route('/projects', suiteRoutes);
 app.route('/projects', runRoutes);
 app.route('/projects', automationRoutes);
+app.route('/admin', adminRoutes);
 
 app.notFound((c) => {
   const user = c.get('user');

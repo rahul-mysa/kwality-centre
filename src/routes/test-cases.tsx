@@ -7,7 +7,7 @@ import { TestCaseListView } from '../views/test-cases/list.js';
 import { TestCaseFormView } from '../views/test-cases/form.js';
 import { TestCaseDetailView } from '../views/test-cases/detail.js';
 import { type FolderNode } from '../views/test-cases/folder-tree.js';
-import type { AuthEnv } from '../middleware/auth.js';
+import { type AuthEnv, requireEditor, requireAdmin } from '../middleware/auth.js';
 
 const testCaseRoutes = new Hono<AuthEnv>();
 
@@ -67,7 +67,7 @@ testCaseRoutes.get('/:projectId/test-cases', async (c) => {
   const sortBy = c.req.query('sort') || 'updated_at';
   const sortDir = c.req.query('dir') || 'desc';
   const page = parseInt(c.req.query('page') || '1');
-  const pageSize = 25;
+  const pageSize = Math.min(Math.max(parseInt(c.req.query('pageSize') || '25'), 10), 100);
 
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
   if (project.length === 0) return c.notFound();
@@ -146,7 +146,8 @@ testCaseRoutes.get('/:projectId/test-cases', async (c) => {
       total={total}
       page={page}
       totalPages={totalPages}
-      filters={{ search, priority, type, status, sort: sortBy, dir: sortDir, folder: folderFilter, subfolders: subfolders ? 'true' : '' }}
+      pageSize={pageSize}
+      filters={{ search, priority, type, status, sort: sortBy, dir: sortDir, folder: folderFilter, subfolders: subfolders ? 'true' : '', pageSize: String(pageSize) }}
       folderTree={folderTree}
       activeFolderId={folderFilter || null}
       rootCount={rootCount}
@@ -177,7 +178,7 @@ function getDescendantIds(parentId: string, allFolders: { id: string; parentId: 
   return result;
 }
 
-testCaseRoutes.get('/:projectId/test-cases/new', async (c) => {
+testCaseRoutes.get('/:projectId/test-cases/new', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
@@ -194,7 +195,7 @@ testCaseRoutes.get('/:projectId/test-cases/new', async (c) => {
   );
 });
 
-testCaseRoutes.post('/:projectId/test-cases', async (c) => {
+testCaseRoutes.post('/:projectId/test-cases', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const project = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
@@ -252,7 +253,7 @@ testCaseRoutes.post('/:projectId/test-cases', async (c) => {
     await db.insert(testSteps).values(steps);
   }
 
-  return c.redirect(`/projects/${projectId}/test-cases/${tc.id}`);
+  return c.redirect(`/projects/${projectId}/test-cases/${tc.id}?toast=Test case created`);
 });
 
 testCaseRoutes.get('/:projectId/test-cases/:caseId', async (c) => {
@@ -283,7 +284,7 @@ testCaseRoutes.get('/:projectId/test-cases/:caseId', async (c) => {
   );
 });
 
-testCaseRoutes.get('/:projectId/test-cases/:caseId/edit', async (c) => {
+testCaseRoutes.get('/:projectId/test-cases/:caseId/edit', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const caseId = c.req.param('caseId');
@@ -305,7 +306,7 @@ testCaseRoutes.get('/:projectId/test-cases/:caseId/edit', async (c) => {
   );
 });
 
-testCaseRoutes.post('/:projectId/test-cases/:caseId', async (c) => {
+testCaseRoutes.post('/:projectId/test-cases/:caseId', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const caseId = c.req.param('caseId');
@@ -367,17 +368,17 @@ testCaseRoutes.post('/:projectId/test-cases/:caseId', async (c) => {
     await db.insert(testSteps).values(steps);
   }
 
-  return c.redirect(`/projects/${projectId}/test-cases/${caseId}`);
+  return c.redirect(`/projects/${projectId}/test-cases/${caseId}?toast=Test case updated`);
 });
 
-testCaseRoutes.post('/:projectId/test-cases/:caseId/delete', async (c) => {
+testCaseRoutes.post('/:projectId/test-cases/:caseId/delete', requireAdmin, async (c) => {
   const projectId = c.req.param('projectId');
   const caseId = c.req.param('caseId');
   await db.delete(testCases).where(eq(testCases.id, caseId));
-  return c.redirect(`/projects/${projectId}/test-cases`);
+  return c.redirect(`/projects/${projectId}/test-cases?toast=Test case deleted`);
 });
 
-testCaseRoutes.post('/:projectId/test-cases/bulk-delete', async (c) => {
+testCaseRoutes.post('/:projectId/test-cases/bulk-delete', requireAdmin, async (c) => {
   const projectId = c.req.param('projectId');
   const body = await c.req.parseBody({ all: true });
   const ids = Array.isArray(body.ids) ? body.ids as string[] : body.ids ? [body.ids as string] : [];
@@ -385,10 +386,10 @@ testCaseRoutes.post('/:projectId/test-cases/bulk-delete', async (c) => {
     await db.delete(testSteps).where(inArray(testSteps.testCaseId, ids));
     await db.delete(testCases).where(and(eq(testCases.projectId, projectId), inArray(testCases.id, ids)));
   }
-  return c.redirect(`/projects/${projectId}/test-cases`);
+  return c.redirect(`/projects/${projectId}/test-cases?toast=Test cases deleted`);
 });
 
-testCaseRoutes.post('/:projectId/test-cases/bulk-status', async (c) => {
+testCaseRoutes.post('/:projectId/test-cases/bulk-status', requireEditor, async (c) => {
   const projectId = c.req.param('projectId');
   const body = await c.req.parseBody({ all: true });
   const ids = Array.isArray(body.ids) ? body.ids as string[] : body.ids ? [body.ids as string] : [];
@@ -396,10 +397,10 @@ testCaseRoutes.post('/:projectId/test-cases/bulk-status', async (c) => {
   if (ids.length > 0 && ['draft', 'active', 'deprecated'].includes(status)) {
     await db.update(testCases).set({ status: status as any, updatedAt: new Date() }).where(and(eq(testCases.projectId, projectId), inArray(testCases.id, ids)));
   }
-  return c.redirect(`/projects/${projectId}/test-cases`);
+  return c.redirect(`/projects/${projectId}/test-cases?toast=Status updated`);
 });
 
-testCaseRoutes.post('/:projectId/test-cases/:caseId/duplicate', async (c) => {
+testCaseRoutes.post('/:projectId/test-cases/:caseId/duplicate', requireEditor, async (c) => {
   const user = c.get('user');
   const projectId = c.req.param('projectId');
   const caseId = c.req.param('caseId');
@@ -433,7 +434,7 @@ testCaseRoutes.post('/:projectId/test-cases/:caseId/duplicate', async (c) => {
     );
   }
 
-  return c.redirect(`/projects/${projectId}/test-cases/${copy.id}`);
+  return c.redirect(`/projects/${projectId}/test-cases/${copy.id}?toast=Test case duplicated`);
 });
 
 export { testCaseRoutes };
