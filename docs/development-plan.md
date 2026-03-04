@@ -378,11 +378,11 @@ attachments
 | ✅ 8.3 | Loading indicators: HTMX `hx-indicator` spinners + form submit spinners |
 | ✅ 8.4 | Empty states: helpful prompts when no data exists |
 | 8.5 | Responsive design: ensure usability on tablet screens |
-| 8.6 | Dockerfile + docker-compose.yml (app, postgres, nginx containers) |
-| 8.7 | Digital Ocean droplet setup: Docker, `docker compose up -d` |
-| 8.8 | SSL setup: Let's Encrypt via Certbot / nginx container |
+| ✅ 8.6 | Dockerfile + docker-compose.yml (app, postgres, nginx, certbot containers) |
+| ✅ 8.7 | Digital Ocean droplet setup guide + init/backup scripts |
+| ✅ 8.8 | SSL setup: Let's Encrypt via Certbot (included in deployment guide) |
 | 8.9 | CI/CD: GitHub Actions → SSH into VM → `docker compose pull && docker compose up -d` |
-| 8.10 | Postgres backups: automated daily `pg_dump` via cron |
+| ✅ 8.10 | Postgres backups: automated daily `pg_dump` via cron (14-day retention) |
 | ✅ 8.11 | README with setup instructions |
 
 **Milestone**: App is live, secure, and maintainable in production.

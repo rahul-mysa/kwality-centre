@@ -1,0 +1,11 @@
+node_modules
+dist
+.env*
+.git
+.gitignore
+.cursor
+*.md
+docs
+scripts
+drizzle
+uploads

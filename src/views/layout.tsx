@@ -36,6 +36,7 @@ export const Layout: FC<LayoutProps> = ({ title, user, activeProject, activePage
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>{title ? `${title} — Kwality Centre` : 'Kwality Centre'}</title>
+      <link rel="icon" type="image/png" href="/assets/kc-logo.png" />
       <link href="https://cdn.jsdelivr.net/npm/daisyui@4/dist/full.min.css" rel="stylesheet" />
       <script src="https://cdn.tailwindcss.com"></script>
       <script src="https://unpkg.com/htmx.org@2.0.4"></script>
@@ -206,9 +207,7 @@ const Sidebar: FC<{ activeProject?: ActiveProject | null; activePage?: string }>
   <aside class="w-64 bg-base-100 border-r border-base-300 flex flex-col">
     <div class="p-5 border-b border-base-300">
       <a href="/" class="flex items-center gap-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <img src="/assets/kc-logo.png" alt="KC" class="h-8 w-8 rounded" />
         <span class="text-lg font-bold">Kwality Centre</span>
       </a>
     </div>
