@@ -119,6 +119,7 @@ export const automatedRuns = pgTable('automated_runs', {
   id: uuid('id').defaultRandom().primaryKey(),
   projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }).notNull(),
   name: text('name').notNull(),
+  label: text('label'),
   platform: text('platform'),
   appVersion: text('app_version'),
   passed: integer('passed').notNull(),

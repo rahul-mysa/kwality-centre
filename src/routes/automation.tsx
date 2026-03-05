@@ -79,6 +79,7 @@ automationRoutes.get('/:projectId/automated-runs', async (c) => {
   const dateFrom = c.req.query('from');
   const dateTo = c.req.query('to');
   const versionFilter = c.req.query('version');
+  const labelFilter = c.req.query('label');
   const period = c.req.query('period') ?? '7d';
 
   const conditions = [eq(automatedRuns.projectId, projectId)];
@@ -103,10 +104,15 @@ automationRoutes.get('/:projectId/automated-runs', async (c) => {
     conditions.push(eq(automatedRuns.appVersion, versionFilter));
   }
 
+  if (labelFilter) {
+    conditions.push(eq(automatedRuns.label, labelFilter));
+  }
+
   const runs = await db
     .select({
       id: automatedRuns.id,
       name: automatedRuns.name,
+      label: automatedRuns.label,
       platform: automatedRuns.platform,
       appVersion: automatedRuns.appVersion,
       passed: automatedRuns.passed,
@@ -129,10 +135,17 @@ automationRoutes.get('/:projectId/automated-runs', async (c) => {
     .orderBy(desc(automatedRuns.appVersion));
   const versions = appVersions.map(v => v.appVersion).filter(Boolean) as string[];
 
+  const labelRows = await db
+    .selectDistinct({ label: automatedRuns.label })
+    .from(automatedRuns)
+    .where(eq(automatedRuns.projectId, projectId))
+    .orderBy(automatedRuns.label);
+  const labels = labelRows.map(l => l.label).filter(Boolean) as string[];
+
   const activeProject = { id: project[0].id, name: project[0].name, hasGithub: !!(project[0].githubOwner && project[0].githubRepo && project[0].githubTestPath) };
   return c.html(
     <Layout title={`Automated Runs — ${project[0].name}`} user={user} activeProject={activeProject} activePage="auto-runs" breadcrumbs={[{ label: 'Projects', href: '/projects' }, { label: project[0].name, href: `/projects/${projectId}` }, { label: 'Automated Runs' }]}>
-      <AutoRunsListView project={project[0]} runs={runs} versions={versions} filters={{ period, dateFrom: dateFrom || '', dateTo: dateTo || '', version: versionFilter || '' }} />
+      <AutoRunsListView project={project[0]} runs={runs} versions={versions} labels={labels} filters={{ period, dateFrom: dateFrom || '', dateTo: dateTo || '', version: versionFilter || '', label: labelFilter || '' }} />
     </Layout>
   );
 });
@@ -154,6 +167,19 @@ automationRoutes.get('/:projectId/automated-runs/:runId', async (c) => {
       <AutoRunDetailView project={project[0]} run={run[0]} />
     </Layout>
   );
+});
+
+automationRoutes.post('/:projectId/automated-runs/:runId/label', async (c) => {
+  const projectId = c.req.param('projectId');
+  const runId = c.req.param('runId');
+  const body = await c.req.parseBody();
+  const label = (body['label'] as string || '').trim() || null;
+
+  await db.update(automatedRuns)
+    .set({ label })
+    .where(eq(automatedRuns.id, runId));
+
+  return c.redirect(`/projects/${projectId}/automated-runs/${runId}?toast=Label updated`);
 });
 
 // ==================== Results API (separate, no auth) ====================
@@ -238,7 +264,7 @@ const AutoTestsView: FC<{
     <div>
       <div class="flex justify-between items-center mb-6">
         <div>
-          <h1 class="text-2xl font-bold">Automated Test Cases</h1>
+          <h1 class="text-2xl font-bold">Automated Tests</h1>
           <p class="text-base-content/60 text-sm mt-1">
             {project.name} — {specFiles.length} suite{specFiles.length !== 1 ? 's' : ''} · {totalTests} test case{totalTests !== 1 ? 's' : ''}
           </p>
@@ -326,6 +352,7 @@ const TestTreeView: FC<{ nodes: TestNode[] }> = ({ nodes }) => (
 type AutoRunRow = {
   id: string;
   name: string;
+  label: string | null;
   platform: string | null;
   appVersion: string | null;
   passed: number;
@@ -349,9 +376,9 @@ function groupRunsByDate(runs: AutoRunRow[]): Map<string, AutoRunRow[]> {
   return groups;
 }
 
-type RunFilters = { period: string; dateFrom: string; dateTo: string; version: string };
+type RunFilters = { period: string; dateFrom: string; dateTo: string; version: string; label: string };
 
-const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRunRow[]; versions: string[]; filters: RunFilters }> = ({ project, runs, versions, filters }) => {
+const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRunRow[]; versions: string[]; labels: string[]; filters: RunFilters }> = ({ project, runs, versions, labels, filters }) => {
   const dateGroups = groupRunsByDate(runs);
   const baseUrl = `/projects/${project.id}/automated-runs`;
 
@@ -362,6 +389,7 @@ const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRu
     if (merged.dateFrom) params.set('from', merged.dateFrom);
     if (merged.dateTo) params.set('to', merged.dateTo);
     if (merged.version) params.set('version', merged.version);
+    if (merged.label) params.set('label', merged.label);
     if (merged.dateFrom || merged.dateTo) params.delete('period');
     const qs = params.toString();
     return qs ? `${baseUrl}?${qs}` : baseUrl;
@@ -400,6 +428,7 @@ const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRu
           <span class="text-xs font-medium text-base-content/50">To:</span>
           <input type="date" name="to" value={filters.dateTo} class="input input-xs input-bordered w-36" />
           {filters.version && <input type="hidden" name="version" value={filters.version} />}
+          {filters.label && <input type="hidden" name="label" value={filters.label} />}
           <button type="submit" class="btn btn-xs btn-primary">Apply</button>
           {isCustomDateRange && <a href={buildUrl({ dateFrom: '', dateTo: '', period: '7d' })} class="btn btn-xs btn-ghost">Clear</a>}
         </form>
@@ -413,6 +442,20 @@ const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRu
                 <option value={buildUrl({ version: '' })} selected={!filters.version}>All versions</option>
                 {versions.map((v) => (
                   <option value={buildUrl({ version: v })} selected={filters.version === v}>{v}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+        {labels.length > 0 && (
+          <>
+            <div class="divider divider-horizontal mx-0 h-6" />
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-base-content/50">Label:</span>
+              <select class="select select-xs select-bordered" onchange={`window.location=this.value`}>
+                <option value={buildUrl({ label: '' })} selected={!filters.label}>All labels</option>
+                {labels.map((l) => (
+                  <option value={buildUrl({ label: l })} selected={filters.label === l}>{l}</option>
                 ))}
               </select>
             </div>
@@ -438,9 +481,10 @@ const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRu
               <div class="overflow-x-auto">
                 <table class="table table-sm table-fixed">
                   <colgroup>
-                    <col style="width: 20%" />
-                    <col style="width: 20%" />
-                    <col style="width: 30%" />
+                    <col style="width: 15%" />
+                    <col style="width: 15%" />
+                    <col style="width: 25%" />
+                    <col style="width: 15%" />
                     <col style="width: 15%" />
                     <col style="width: 15%" />
                   </colgroup>
@@ -451,6 +495,7 @@ const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRu
                       <th>Results</th>
                       <th>Pass Rate</th>
                       <th>Duration</th>
+                      <th>Label</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -484,6 +529,7 @@ const AutoRunsListView: FC<{ project: { id: string; name: string }; runs: AutoRu
                             </span>
                           </td>
                           <td class="text-sm text-base-content/60 whitespace-nowrap">{durationMin != null ? `${durationMin}m` : '—'}</td>
+                          <td class="whitespace-nowrap">{r.label ? <span class="badge badge-sm badge-outline">{r.label}</span> : <span class="text-base-content/30">—</span>}</td>
                         </tr>
                       );
                     })}
@@ -631,9 +677,16 @@ const AutoRunDetailView: FC<{ project: { id: string; name: string }; run: any }>
     <div>
       <div class="mb-6">
         <h1 class="text-2xl font-bold">{run.name}</h1>
-        <div class="flex items-center gap-2 mt-1">
-          {run.platform && <span class="badge badge-sm badge-outline">{run.platform}</span>}
-          {run.appVersion && <span class="badge badge-sm badge-primary badge-outline">v{run.appVersion}</span>}
+        <div class="flex items-center justify-between mt-2 flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            {run.platform && <span class="badge badge-sm badge-outline">{run.platform}</span>}
+            {run.appVersion && <span class="badge badge-sm badge-primary badge-outline">v{run.appVersion}</span>}
+          </div>
+          <form method="post" action={`/projects/${project.id}/automated-runs/${run.id}/label`} class="flex items-center gap-2 editor-action">
+            <span class="text-xs text-base-content/50">Label:</span>
+            <input type="text" name="label" value={run.label || ''} placeholder="Add label..." class="input input-xs input-bordered w-36" />
+            <button type="submit" class="btn btn-xs btn-primary btn-outline">Save</button>
+          </form>
         </div>
       </div>
 
